@@ -5,3 +5,5 @@ export default function Home() {
     <LiveDataFeed />
   )
 }
+
+export const dynamic ='force-dynamic';

@@ -14,7 +14,6 @@ export default function LiveDataFeed() {
       try {
         const response = await fetch('/api/poll')
         const data = await response.json()
-        
         setMessages(prevMessages => [...prevMessages, data])
         setCurrentMessage(data)
       } catch (error) {
@@ -54,3 +53,5 @@ export default function LiveDataFeed() {
     </div>
   )
 }
+
+export const dynamic = 'force-dynamic';
