@@ -14,6 +14,7 @@ export default function LiveDataFeed() {
       try {
         const response = await fetch('/api/poll')
         const data = await response.json()
+        
         setMessages(prevMessages => [...prevMessages, data])
         setCurrentMessage(data)
       } catch (error) {
