@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { sensorData } from '@/lib/types/sensorData'
@@ -10,7 +9,7 @@ interface props {
   id: string
 }
 
-export default function sensorDataFeed(props:props) {
+export default function LiveDataFeed(props:props) {
   const [messages, setMessages] = useState<sensorData[]>([])
   const [currentMessage, setCurrentMessage] = useState<sensorData | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
