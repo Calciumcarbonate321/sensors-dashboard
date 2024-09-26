@@ -2,7 +2,10 @@ import LiveDataFeed from "@/components/live-feed";
 
 export default function Home() {
   return (
-    <LiveDataFeed />
+    <>
+    <LiveDataFeed id="hehe" />
+    <LiveDataFeed id="nothehe"/>
+    </>
   )
 }
 
