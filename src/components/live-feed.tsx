@@ -1,18 +1,42 @@
 'use client'
-
-import { useState, useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  TooltipProps
+} from 'recharts'
 import type { sensorData } from '@/lib/types/sensorData'
 
-interface props {
+interface Props {
   id: string
 }
 
-export default function LiveDataFeed(props:props) {
-  const [messages, setMessages] = useState<sensorData[]>([])
-  const [currentMessage, setCurrentMessage] = useState<sensorData | null>(null)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
+// Extended sensor data type that includes timestamp
+interface TimeSeriesSensorData extends sensorData {
+  time: string
+}
+
+// Custom type for tooltip payload
+interface CustomTooltipPayload {
+  value: number
+  name: string
+  color: string
+  unit: string
+}
+
+// Props type for custom tooltip
+interface CustomTooltipProps extends Omit<TooltipProps<number, string>, 'payload'> {
+  payload?: CustomTooltipPayload[]
+}
+
+export default function LiveDataFeed(props: Props) {
+  const [messages, setMessages] = useState<TimeSeriesSensorData[]>([])
   const id = props.id
 
   useEffect(() => {
@@ -20,66 +44,108 @@ export default function LiveDataFeed(props:props) {
       try {
         const response = await fetch('/api/clients/' + id)
         const data = await response.json()
-        setMessages(prevMessages => [...prevMessages, data])
-        setCurrentMessage(data)
+        const timestamp = new Date().toLocaleTimeString()
+        setMessages(prevMessages => [...prevMessages, { ...data, time: timestamp }])
       } catch (error) {
         console.error('Error fetching data:', error)
       }
     }
-
     const interval = setInterval(fetchData, 3000)
-
     return () => clearInterval(interval)
-  }, [])
+  }, [id])
 
-  useEffect(() => {
-    // Scroll to top when new messages are added
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = 0
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 border rounded-lg shadow-lg">
+          <p className="text-sm font-medium">{`Time: ${label}`}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value.toFixed(1)}${entry.unit}`}
+            </p>
+          ))}
+        </div>
+      )
     }
-  }, [messages])
-
-  const rendersensorData = (data: sensorData) => (
-    <div className="grid grid-cols-3 gap-4">
-      <div>
-        <span className="font-semibold">Temp:</span> {data.temperature.toFixed(1)}°C
-      </div>
-      <div>
-        <span className="font-semibold">Humidity:</span> {data.humidity.toFixed(1)}%
-      </div>
-      <div>
-        <span className="font-semibold">Pressure:</span> {data.pressure.toFixed(1)} hPa
-      </div>
-    </div>
-  )
+    return null
+  }
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 space-y-4">
+    <div className="w-full max-w-4xl mx-auto p-4 space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>ESP32 client id: {id}</CardTitle>
         </CardHeader>
-        <CardContent className="p-4">
-          <h2 className="text-lg font-semibold mb-2">Latest Sensor Data</h2>
-          {currentMessage && rendersensorData(currentMessage)}
+        <CardContent className="space-y-6">
+          {/* Temperature Chart */}
+          <div className="h-64">
+            <h3 className="text-lg font-semibold mb-2">Temperature (°C)</h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={messages}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="temperature" 
+                  stroke="#ff6b6b" 
+                  name="Temperature"
+                  unit="°C"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Humidity Chart */}
+          <div className="h-64">
+            <h3 className="text-lg font-semibold mb-2">Humidity (%)</h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={messages}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="humidity" 
+                  stroke="#4ecdc4" 
+                  name="Humidity"
+                  unit="%"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Pressure Chart */}
+          <div className="h-64">
+            <h3 className="text-lg font-semibold mb-2">Pressure (hPa)</h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={messages}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="pressure" 
+                  stroke="#45b7d1" 
+                  name="Pressure"
+                  unit=" hPa"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
-      <ScrollArea className="h-80 w-full border rounded-md p-4" ref={scrollAreaRef}>
-        <div className="space-y-2">
-          {messages.map((message, index) => (
-            <Card key={index} className="mb-2">
-              <CardContent className="p-2">
-                <div className="text-sm text-muted-foreground mb-1">
-                  {new Date().toLocaleTimeString()}
-                </div>
-                {rendersensorData(message)}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </ScrollArea>
     </div>
   )
 }
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
